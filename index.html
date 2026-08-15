@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Owed">
+<meta name="theme-color" content="#0A0B0A" id="themeColorMeta">
+<title>Owed — Money Tracker</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230A0B0A'/%3E%3Ccircle cx='50' cy='50' r='30' fill='%2394FA6B'/%3E%3Ctext x='50' y='60' font-family='-apple-system' font-size='34' font-weight='800' fill='%230A0B0A' text-anchor='middle'%3E%24%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0A0B0A;
+    --card:#15170F;
+    --card-2:#1B1E15;
+    --stroke:#2A2E22;
+    --text:#F3F5EE;
+    --text-dim:#9AA294;
+    --text-faint:#5C6356;
+    --lime:#94FA6B;
+    --lime-glow: rgba(148,250,107,0.35);
+    --lime-soft: rgba(148,250,107,0.14);
+    --coral:#FF7A66;
+    --coral-soft: rgba(255,122,102,0.14);
+    --rounded: ui-rounded, "SF Pro Rounded", -apple-system, "Segoe UI", Roboto, sans-serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Menlo", Consolas, monospace;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  body.theme-light{
+    --bg:#F5F7EF;
+    --card:#FFFFFF;
+    --card-2:#EEF2E5;
+    --stroke:#DEE4D3;
+    --text:#181A13;
+    --text-dim:#5B6350;
+    --text-faint:#8B9280;
+    --lime:#2E8F3E;
+    --lime-glow: rgba(46,143,62,0.20);
+    --lime-soft: rgba(46,143,62,0.12);
+    --coral:#C6482F;
+    --coral-soft: rgba(198,72,47,0.12);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); overscroll-behavior-y:none; -webkit-font-smoothing:antialiased;
+    transition: background .25s ease, color .25s ease;
+  }
+  #app{ max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; position:relative; }
+
+  header.top{
+    padding: calc(var(--safe-top) + 16px) 20px 4px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%; background:var(--card); border:1px solid var(--stroke);
+    display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--lime); cursor:pointer;
+    position:relative;
+  }
+  .icon-btn .dot-badge{
+    position:absolute; top:-2px; right:-2px; width:11px; height:11px; border-radius:50%;
+    background:var(--coral); border:2px solid var(--bg); display:none;
+  }
+  .icon-btn .dot-badge.show{display:block;}
+  .currency-badge{
+    background:var(--card); border:1px solid var(--stroke); border-radius:20px; padding:8px 14px;
+    font-size:12.5px; font-weight:700; color:var(--lime); cursor:pointer; font-family:var(--rounded);
+  }
+
+  main{flex:1; overflow-y:auto; padding-bottom: calc(100px + var(--safe-bottom));}
+
+  .hero{ padding: 14px 22px 4px; }
+  .hero .row{display:flex; align-items:center; gap:8px;}
+  .hero .label{font-size:13px; color:var(--text-dim); font-weight:600;}
+  .eye{background:none; border:none; color:var(--text-dim); font-size:15px; cursor:pointer; padding:2px;}
+  .hero .big{
+    font-family:var(--rounded); font-weight:800; font-size:46px; letter-spacing:-0.02em; margin-top:4px;
+    color:var(--text);
+  }
+  .hero .big.blurred{ filter: blur(10px); user-select:none; }
+  .hero .big .cur{ color:var(--lime); text-shadow: 0 0 18px var(--lime-glow); }
+  .hero .caption{font-size:13.5px; color:var(--text-dim); margin-top:2px;}
+
+  .quick-row{ display:flex; gap:10px; padding: 18px 22px 6px; }
+  .quick-btn{
+    flex:1; background:var(--card); border:1px solid var(--stroke); border-radius:16px;
+    padding:12px 8px; display:flex; flex-direction:column; align-items:center; gap:6px;
+    color:var(--text); font-size:11.5px; font-weight:600; cursor:pointer;
+  }
+  .quick-btn .qi{
+    width:30px; height:30px; border-radius:50%; background:var(--lime-soft);
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--lime);
+  }
+
+  .stack-wrap{ padding: 22px 0 6px; }
+  .stack{
+    display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
+    padding: 0 22px 6px; -webkit-overflow-scrolling:touch;
+  }
+  .stack::-webkit-scrollbar{display:none;}
+  .pcard{
+    scroll-snap-align:start; flex:0 0 78%; max-width:320px;
+    background: linear-gradient(160deg, var(--card-2), var(--card));
+    border:1px solid var(--stroke); border-radius:22px; padding:18px;
+    min-height:150px; display:flex; flex-direction:column; justify-content:space-between;
+    cursor:pointer; position:relative; overflow:hidden;
+  }
+  .pcard::after{
+    content:""; position:absolute; width:160px; height:160px; border-radius:50%;
+    background: radial-gradient(circle, var(--lime-glow), transparent 70%);
+    top:-80px; right:-60px; opacity:.5; pointer-events:none;
+  }
+  .pcard .top-row{ display:flex; align-items:center; justify-content:space-between; position:relative;}
+  .pcard .pname{ font-family:var(--rounded); font-weight:700; font-size:17px; }
+  .pcard .avatar{
+    width:38px; height:38px; border-radius:50%; background:var(--lime); color:#0A0B0A;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; font-family:var(--rounded);
+  }
+  .pcard .status{ font-size:12.5px; color:var(--text-dim); margin-top:14px; }
+  .pcard .amt{ font-family:var(--rounded); font-weight:800; font-size:26px; margin-top:2px; }
+  .pcard .amt.pos{color:var(--lime);}
+  .pcard .amt.neg{color:var(--coral);}
+  .pcard .amt.zero{color:var(--text-faint); font-size:20px;}
+  .pcard.addcard{ align-items:center; justify-content:center; text-align:center; background:var(--card); border:1px dashed var(--stroke); }
+  .pcard.addcard .plus{ font-size:26px; color:var(--lime); margin-bottom:6px; }
+  .pcard.addcard .t{ font-size:13px; color:var(--text-dim); font-weight:600; }
+
+  .dots{ display:flex; gap:6px; justify-content:center; margin-top:12px; }
+  .dots span{ width:6px; height:6px; border-radius:50%; background:var(--stroke); }
+  .dots span.on{ background:var(--lime); box-shadow:0 0 8px var(--lime-glow); }
+
+  .section-label{ font-family:var(--rounded); font-size:14px; color:var(--text); font-weight:700; padding: 22px 22px 8px; display:flex; align-items:center; justify-content:space-between; }
+  .section-label .mini-link{ font-size:12px; color:var(--lime); font-weight:700; cursor:pointer; }
+
+  .empty{ text-align:center; padding: 50px 24px; color:var(--text-dim); }
+  .empty .big{font-family:var(--rounded); font-size:17px; font-weight:700; color:var(--text); margin-bottom:6px;}
+  .empty small{font-size:13px; line-height:1.5; display:block;}
+
+  .feed{ padding: 0 18px; }
+  .feed-item{ display:flex; align-items:center; gap:12px; padding:11px 6px; border-bottom:1px solid var(--stroke); }
+  .feed-icon{ width:36px; height:36px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .feed-icon.pos{ background:var(--lime-soft); color:var(--lime); }
+  .feed-icon.neg{ background:var(--coral-soft); color:var(--coral); }
+  .feed-main{ flex:1; min-width:0; }
+  .feed-name{ font-size:14.5px; font-weight:700; }
+  .feed-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; }
+  .feed-amt{ font-family:var(--mono); font-weight:700; font-size:14.5px; flex-shrink:0; }
+  .feed-amt.pos{ color:var(--lime); }
+  .feed-amt.neg{ color:var(--coral); }
+
+  /* Reminder rows */
+  .rem-item{ display:flex; align-items:center; gap:12px; padding:12px 6px; border-bottom:1px solid var(--stroke); }
+  .rem-check{
+    width:26px; height:26px; border-radius:50%; border:2px solid var(--stroke); flex-shrink:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--bg);
+  }
+  .rem-check.done{ background:var(--lime); border-color:var(--lime); }
+  .rem-main{ flex:1; min-width:0; }
+  .rem-note{ font-size:14.5px; font-weight:700; }
+  .rem-note.done{ text-decoration:line-through; color:var(--text-faint); font-weight:500; }
+  .rem-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; }
+  .rem-sub.overdue{ color:var(--coral); font-weight:600; }
+  .rem-del{ background:none; border:none; color:var(--text-faint); font-size:11px; cursor:pointer; flex-shrink:0; }
+  .banner{
+    margin: 12px 18px 0; padding:12px 14px; border-radius:14px; background:var(--coral-soft);
+    border:1px solid var(--coral); color:var(--coral); font-size:13px; font-weight:700;
+  }
+
+  nav.tabbar{
+    position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto;
+    background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(18px);
+    border-top:1px solid var(--stroke); border-radius:26px 26px 0 0;
+    display:flex; padding: 10px 8px calc(10px + var(--safe-bottom)); z-index:40;
+  }
+  nav.tabbar button{
+    flex:1; background:none; border:none; padding:6px 4px;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    color:var(--text-faint); font-size:10.5px; font-weight:600; cursor:pointer; position:relative;
+  }
+  nav.tabbar button .icon{ font-size:18px; line-height:1; }
+  nav.tabbar button.active{ color:var(--lime); }
+  nav.tabbar button .tab-badge{
+    position:absolute; top:0; right:22%; width:8px; height:8px; border-radius:50%; background:var(--coral); display:none;
+  }
+  nav.tabbar button .tab-badge.show{display:block;}
+
+  .detail-header{ display:flex; align-items:center; gap:12px; padding: calc(var(--safe-top) + 14px) 20px 4px; }
+  .back{
+    background:var(--card); border:1px solid var(--stroke); border-radius:50%; width:38px; height:38px;
+    font-size:16px; color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .detail-title{ font-family:var(--rounded); font-size:18px; font-weight:800; flex:1; }
+  .del-person{ background:none; border:none; color:var(--coral); font-size:12.5px; cursor:pointer; font-weight:600; }
+
+  .balance-block{ text-align:center; padding: 22px 20px 6px; }
+  .avatar-lg{
+    width:66px; height:66px; border-radius:50%; margin:0 auto 14px; background:var(--lime); color:#0A0B0A;
+    display:flex; align-items:center; justify-content:center; font-family:var(--rounded); font-weight:800; font-size:23px;
+  }
+  .balance-block .big-amt{ font-family:var(--rounded); font-size:38px; font-weight:800; letter-spacing:-0.02em; }
+  .balance-block .big-amt.pos{color:var(--lime); text-shadow:0 0 20px var(--lime-glow);}
+  .balance-block .big-amt.neg{color:var(--coral);}
+  .balance-block .big-amt.zero{color:var(--text-faint);}
+  .balance-block .caption{font-size:13px; color:var(--text-dim); margin-top:6px;}
+  .balance-block .extra-currencies{font-family:var(--mono); font-size:13px; color:var(--text-faint); margin-top:8px;}
+
+  .entry-row{ position:relative; display:flex; justify-content:space-between; align-items:flex-start; padding:13px 4px; border-bottom:1px solid var(--stroke); gap:10px; }
+  .entry-left{flex:1; min-width:0;}
+  .entry-note{font-size:14.5px; font-weight:600;}
+  .entry-note.settlement{color:var(--text-dim); font-style:italic; font-weight:500;}
+  .entry-date{font-size:11.5px; color:var(--text-faint); margin-top:2px;}
+  .entry-right{text-align:right; flex-shrink:0;}
+  .entry-amt{font-family:var(--mono); font-size:15px; font-weight:700;}
+  .entry-amt.pos{color:var(--lime);}
+  .entry-amt.neg{color:var(--coral);}
+  .entry-actions{display:flex; gap:8px; margin-top:4px; justify-content:flex-end;}
+  .entry-actions button{ background:none; border:none; font-size:11px; color:var(--text-faint); cursor:pointer; padding:2px 0;}
+
+  .stamp{
+    position:absolute; right:4px; top:8px; font-family:var(--rounded); font-weight:800; font-size:11px; color:#0A0B0A;
+    background: var(--lime); border-radius:20px; padding:3px 10px;
+    transform: scale(0); opacity:0; letter-spacing:.04em;
+    animation: stampIn .5s cubic-bezier(.34,1.7,.64,1) forwards; pointer-events:none;
+  }
+  @keyframes stampIn{ 0%{transform:scale(2.2);opacity:0;} 60%{transform:scale(0.94);opacity:1;} 100%{transform:scale(1);opacity:1;} }
+
+  .actions-grid{ display:flex; gap:10px; padding: 18px 20px 4px; }
+  .action-circle{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; }
+  .action-circle .ci{ width:52px; height:52px; border-radius:50%; background:var(--lime); color:#0A0B0A; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .action-circle .cl{ font-size:11.5px; color:var(--lime); font-weight:700; }
+
+  .overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.65); display:flex; align-items:flex-end; z-index:100; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  .overlay.show{opacity:1; pointer-events:auto;}
+  .sheet{
+    background:var(--bg); width:100%; max-width:480px; margin:0 auto; border-radius:26px 26px 0 0;
+    padding: 14px 20px calc(24px + var(--safe-bottom)); border:1px solid var(--stroke); border-bottom:none;
+    transform: translateY(100%); transition: transform .32s cubic-bezier(.19,1.2,.32,1); max-height:88vh; overflow-y:auto;
+  }
+  .overlay.show .sheet{transform: translateY(0);}
+  .sheet-handle{width:36px; height:4px; background:var(--stroke); border-radius:2px; margin:0 auto 14px;}
+  .sheet h2{font-family:var(--rounded); font-size:19px; font-weight:800; margin:0 0 16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;}
+  .field input[type=text], .field input[type=number], .field input[type=date], .field input[type=time], .field select{
+    width:100%; border:1px solid var(--stroke); background:var(--card); border-radius:13px; padding:12px 13px;
+    font-size:16px; font-family:var(--sans); color:var(--text);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--lime); outline-offset:1px;}
+  .toggle-row{display:flex; gap:8px;}
+  .toggle-row button{ flex:1; padding:12px; border-radius:13px; border:1px solid var(--stroke); background:var(--card); font-size:14px; font-weight:700; color:var(--text-dim); cursor:pointer; }
+  .toggle-row button.active.owe-you{background:var(--lime-soft); border-color:var(--lime); color:var(--lime);}
+  .toggle-row button.active.you-owe{background:var(--coral-soft); border-color:var(--coral); color:var(--coral);}
+  .toggle-row button.active.theme-opt{background:var(--lime-soft); border-color:var(--lime); color:var(--lime);}
+  .amt-currency-row{display:flex; gap:8px;}
+  .amt-currency-row .field{flex:1;}
+  .amt-currency-row .field.curr{flex:0 0 100px;}
+  .primary-btn{ width:100%; background:var(--lime); color:#0A0B0A; border:none; border-radius:14px; padding:14px; font-size:15.5px; font-weight:800; font-family:var(--rounded); cursor:pointer; margin-top:6px; }
+  .primary-btn:active{opacity:.85;}
+  .cancel-link{ display:block; text-align:center; margin-top:12px; background:none; border:none; color:var(--text-dim); font-size:14px; cursor:pointer; }
+  .avatar-pick{display:flex; gap:9px; margin-bottom:16px; flex-wrap:wrap;}
+  .avatar-pick .swatch{ width:36px; height:36px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
+  .avatar-pick .swatch.sel{border-color:var(--text);}
+  .settle-summary{ background:var(--card); border:1px solid var(--stroke); border-radius:14px; padding:12px 14px; margin-bottom:16px; font-size:14px; color:var(--text-dim); line-height:1.7; }
+  .settle-summary b{color:var(--text); font-family:var(--mono);}
+  .info-sheet p{font-size:14.5px; line-height:1.6; color:var(--text-dim);}
+  .info-sheet .step{display:flex; gap:10px; margin-bottom:12px;}
+  .info-sheet .step .n{ font-family:var(--rounded); font-weight:800; color:var(--lime); flex-shrink:0; }
+  ::selection{background: var(--lime-soft);}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙︎</button>
+    <div class="currency-badge" id="currencyBadge">USD ▾</div>
+  </header>
+  <main id="main"></main>
+  <nav class="tabbar">
+    <button class="tab-btn active" data-view="people"><span class="icon">◈</span>Main</button>
+    <button class="tab-btn" data-view="reminders"><span class="icon">◔</span>Reminders<span class="tab-badge" id="remTabBadge"></span></button>
+    <button class="tab-btn" data-view="summary"><span class="icon">▤</span>Records</button>
+  </nav>
+</div>
+
+<div class="overlay" id="personOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>New person</h2>
+    <div class="field"><label>Name</label><input type="text" id="personName" placeholder="e.g. Alex"></div>
+    <label style="display:block;font-size:11.5px;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Color</label>
+    <div class="avatar-pick" id="avatarPick"></div>
+    <button class="primary-btn" id="savePersonBtn">Add person</button>
+    <button class="cancel-link" id="cancelPersonBtn">Cancel</button>
+  </div>
+</div>
+
+<div class="overlay" id="entryOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="entrySheetTitle">New entry</h2>
+    <div class="field">
+      <div class="toggle-row">
+        <button type="button" id="dirOweYou" class="active owe-you">They owe you</button>
+        <button type="button" id="dirYouOwe" class="you-owe">You owe them</button>
+      </div>
+    </div>
+    <div class="amt-currency-row">
+      <div class="field"><label>Amount</label><input type="number" inputmode="decimal" id="entryAmount" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="field curr"><label>Currency</label><select id="entryCurrency"></select></div>
+    </div>
+    <div class="field"><label>For</label><input type="text" id="entryNote" placeholder="e.g. dinner, rent, taxi"></div>
+    <div class="field"><label>Date</label><input type="date" id="entryDate"></div>
+    <button class="primary-btn" id="saveEntryBtn">Save entry</button>
+    <button class="cancel-link" id="cancelEntryBtn">Cancel</button>
+  </div>
+</div>
+
+<div class="overlay" id="settleOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Settle up</h2>
+    <div class="settle-summary" id="settleSummary"></div>
+    <div class="field">
+      <div class="toggle-row">
+        <button type="button" id="settleFull" class="active owe-you">Full amount</button>
+        <button type="button" id="settlePartial">Partial</button>
+      </div>
+    </div>
+    <div class="amt-currency-row" id="settlePartialRow" style="display:none;">
+      <div class="field"><label>Amount received/paid</label><input type="number" inputmode="decimal" id="settleAmount" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="field curr"><label>Currency</label><select id="settleCurrency"></select></div>
+    </div>
+    <button class="primary-btn" id="confirmSettleBtn">Mark settled</button>
+    <button class="cancel-link" id="cancelSettleBtn">Cancel</button>
+  </div>
+</div>
+
+<div class="overlay" id="reminderOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>New reminder</h2>
+    <div class="field">
+      <label>For</label>
+      <select id="reminderTarget"></select>
+    </div>
+    <div class="field"><label>Note</label><input type="text" id="reminderNote" placeholder="e.g. Ask about the £50"></div>
+    <div class="amt-currency-row">
+      <div class="field"><label>Date</label><input type="date" id="reminderDate"></div>
+      <div class="field curr" style="flex:0 0 130px;"><label>Time</label><input type="time" id="reminderTime"></div>
+    </div>
+    <button class="primary-btn" id="saveReminderBtn">Save reminder</button>
+    <button class="cancel-link" id="cancelReminderBtn">Cancel</button>
+  </div>
+</div>
+
+<div class="overlay" id="infoOverlay">
+  <div class="sheet info-sheet">
+    <div class="sheet-handle"></div>
+    <h2>Theme</h2>
+    <div class="field">
+      <div class="toggle-row">
+        <button type="button" id="themeDarkBtn" class="active theme-opt">Dark</button>
+        <button type="button" id="themeLightBtn" class="theme-opt">Light</button>
+      </div>
+    </div>
+    <h2>Default currency</h2>
+    <div class="field"><select id="defaultCurrencySelect"></select></div>
+    <h2>Add to Home Screen</h2>
+    <div class="step"><div class="n">1</div><div>Open this page in <b>Safari</b> on your iPhone.</div></div>
+    <div class="step"><div class="n">2</div><div>Tap the <b>Share</b> icon in the toolbar.</div></div>
+    <div class="step"><div class="n">3</div><div>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</div></div>
+    <p>All data stays on this device only, in local storage. Nothing is uploaded anywhere.</p>
+    <p>About reminders: this app has no background server, so on iPhone it can't reliably send you a push notification while it's closed. Reminders always show up — with an overdue badge — as soon as you open the app. If you allow notifications below, it will also try to alert you while the app is open and in the foreground.</p>
+    <button class="primary-btn" id="enableNotifBtn" style="margin-bottom:8px;">Allow in-app notifications</button>
+    <button class="cancel-link" id="closeInfoBtn">Close</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var CURRENCIES = [
+    {code:"USD", symbol:"$"}, {code:"GBP", symbol:"£"}, {code:"EUR", symbol:"€"},
+    {code:"JPY", symbol:"¥"}, {code:"INR", symbol:"₹"}, {code:"CAD", symbol:"CA$"},
+    {code:"AUD", symbol:"A$"}, {code:"CHF", symbol:"Fr"}, {code:"CNY", symbol:"¥"},
+    {code:"MXN", symbol:"MX$"}, {code:"BRL", symbol:"R$"}, {code:"ZAR", symbol:"R"},
+    {code:"AED", symbol:"د.إ"}, {code:"SGD", symbol:"S$"}, {code:"NZD", symbol:"NZ$"}
+  ];
+  var SWATCHES = ["#94FA6B","#6BD4FA","#FA9B6B","#D46BFA","#FAE26B","#6BFAC4","#FA6B9B","#B0FA6B"];
+  var STORAGE_KEY = "owed_ledger_v3";
+  var state = loadState();
+  var balanceHidden = false;
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(!parsed.reminders) parsed.reminders = [];
+        if(!parsed.theme) parsed.theme = "dark";
+        return parsed;
+      }
+    }catch(e){}
+    return { people: [], defaultCurrency: "USD", reminders: [], theme: "dark" };
+  }
+  function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} refreshCurrencyBadge(); refreshReminderBadges(); }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function symbolFor(code){ var c = CURRENCIES.find(function(x){return x.code===code;}); return c ? c.symbol : code + " "; }
+  function fmt(amount, code){
+    var sym = symbolFor(code); var v = Math.abs(amount);
+    return sym + v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function prettyDate(iso){ var d=new Date(iso+"T00:00:00"); if(isNaN(d)) return iso; return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}); }
+  function dayLabel(iso){
+    var d = new Date(iso+"T00:00:00"); var t = new Date(todayISO()+"T00:00:00");
+    var diff = Math.round((t-d)/86400000);
+    if(diff===0) return "Today"; if(diff===1) return "Yesterday";
+    return d.toLocaleDateString(undefined,{month:"long", day:"numeric"});
+  }
+  function personBalances(person){
+    var out = {};
+    person.entries.forEach(function(e){ out[e.currency] = (out[e.currency]||0) + e.amount; });
+    Object.keys(out).forEach(function(k){ if(Math.abs(out[k])<0.005) delete out[k]; });
+    return out;
+  }
+  function initials(name){
+    var parts = name.trim().split(/\s+/); var s = parts[0]?parts[0][0]:"";
+    if(parts.length>1) s += parts[parts.length-1][0];
+    return s.toUpperCase();
+  }
+  function escapeHtml(s){ var d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+  // ---------- Theme ----------
+  function applyTheme(){
+    document.body.classList.toggle("theme-light", state.theme === "light");
+    document.getElementById("themeColorMeta").setAttribute("content", state.theme==="light" ? "#F5F7EF" : "#0A0B0A");
+    var db = document.getElementById("themeDarkBtn"), lb = document.getElementById("themeLightBtn");
+    if(db && lb){ db.classList.toggle("active", state.theme==="dark"); lb.classList.toggle("active", state.theme==="light"); }
+  }
+
+  var view = "people"; var currentPersonId = null;
+  var mainEl = document.getElementById("main");
+
+  function render(){
+    if(view === "people") renderPeople();
+    else if(view === "summary") renderSummary();
+    else if(view === "detail") renderDetail();
+    else if(view === "reminders") renderReminders();
+    document.querySelectorAll(".tab-btn").forEach(function(b){
+      b.classList.toggle("active", b.dataset.view===view || (view==="detail" && b.dataset.view==="people"));
+    });
+  }
+  function overallTotals(){
+    var totals = {};
+    state.people.forEach(function(p){
+      var b = personBalances(p);
+      Object.keys(b).forEach(function(c){ totals[c] = (totals[c]||0) + b[c]; });
+    });
+    return totals;
+  }
+  function allEntriesFlat(){
+    var out = [];
+    state.people.forEach(function(p){
+      p.entries.forEach(function(e){ out.push({ person:p, entry:e }); });
+    });
+    out.sort(function(a,b){ return b.entry.date.localeCompare(a.entry.date) || b.entry.createdAt-a.entry.createdAt; });
+    return out;
+  }
+
+  function renderPeople(){
+    var totals = overallTotals();
+    var codes = Object.keys(totals);
+    var primary = codes[0];
+    var netVal = primary ? totals[primary] : 0;
+    var caption = !primary ? "Nothing tracked yet" : (netVal>0 ? "Amount owed to you" : (netVal<0 ? "Amount you owe" : "All settled"));
+    var displayVal = fmt(Math.abs(netVal), primary || state.defaultCurrency);
+
+    var html = '<div class="hero">' +
+      '<div class="row"><div class="label">Total balance</div><button class="eye" id="eyeBtn">' + (balanceHidden ? "show" : "hide") + '</button></div>' +
+      '<div class="big ' + (balanceHidden ? "blurred" : "") + '" id="heroAmt"><span class="cur">' + displayVal + '</span></div>' +
+      '<div class="caption">' + caption + '</div>' +
+    '</div>';
+
+    html += '<div class="quick-row">' +
+      '<div class="quick-btn" id="qAllPeople"><div class="qi">◈</div>All people</div>' +
+      '<div class="quick-btn" id="qAddPerson"><div class="qi">+</div>Add person</div>' +
+      '<div class="quick-btn" id="qAddEntry"><div class="qi">✎</div>Log entry</div>' +
+    '</div>';
+
+    var dueReminders = upcomingReminders().filter(function(r){ return isOverdue(r); });
+    if(dueReminders.length){
+      html += '<div class="banner">' + dueReminders.length + ' reminder' + (dueReminders.length>1?"s":"") + ' due — check the Reminders tab</div>';
+    }
+
+    if(state.people.length === 0){
+      html += '<div class="empty"><div class="big">Your ledger is empty</div><small>Add the first person you lend to or borrow from<br>to start tracking.</small></div>';
+    } else {
+      html += '<div class="stack-wrap"><div class="stack" id="cardStack">';
+      state.people.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(p){
+        var bal = personBalances(p);
+        var pcodes = Object.keys(bal);
+        var pcode = pcodes[0];
+        var pval = pcode ? bal[pcode] : 0;
+        var cls = pcodes.length===0 ? "zero" : (pval>0?"pos":"neg");
+        var statusText = pcodes.length===0 ? "All settled" : (pval>0 ? p.name + " owes you" : "You owe " + p.name);
+        var amtText = pcodes.length===0 ? "Even" : fmt(Math.abs(pval), pcode);
+        html += '<div class="pcard" data-id="' + p.id + '">' +
+          '<div class="top-row"><div class="pname">' + escapeHtml(p.name) + '</div><div class="avatar" style="background:' + p.color + '">' + initials(p.name) + '</div></div>' +
+          '<div><div class="status">' + statusText + '</div><div class="amt ' + cls + '">' + amtText + '</div></div>' +
+        '</div>';
+      });
+      html += '<div class="pcard addcard" id="addCard"><div class="plus">+</div><div class="t">Add person</div></div>';
+      html += '</div></div><div class="dots" id="dots"></div>';
+
+      var flat = allEntriesFlat();
+      html += '<div class="section-label">Activity</div>';
+      if(flat.length===0){
+        html += '<div class="empty"><small>No entries logged yet.</small></div>';
+      } else {
+        html += '<div class="feed">';
+        var lastLabel = null;
+        flat.slice(0,40).forEach(function(item){
+          var lbl = dayLabel(item.entry.date);
+          if(lbl !== lastLabel){ html += '<div class="section-label" style="padding:14px 6px 4px; font-size:12px; color:var(--text-faint);">' + lbl + '</div>'; lastLabel = lbl; }
+          var pos = item.entry.amount > 0;
+          html += '<div class="feed-item">' +
+            '<div class="feed-icon ' + (pos?"pos":"neg") + '">' + (pos?"↓":"↑") + '</div>' +
+            '<div class="feed-main"><div class="feed-name">' + escapeHtml(item.person.name) + '</div>' +
+            '<div class="feed-sub">' + escapeHtml(item.entry.note || (item.entry.isSettlement?"Payment":(pos?"Lent":"Borrowed"))) + '</div></div>' +
+            '<div class="feed-amt ' + (pos?"pos":"neg") + '">' + (pos?"+":"−") + fmt(Math.abs(item.entry.amount), item.entry.currency) + '</div>' +
+          '</div>';
+        });
+        html += '</div>';
+      }
+    }
+    mainEl.innerHTML = html;
+
+    var eyeBtn = document.getElementById("eyeBtn");
+    if(eyeBtn) eyeBtn.addEventListener("click", function(){ balanceHidden = !balanceHidden; renderPeople(); });
+    var qAllPeople = document.getElementById("qAllPeople");
+    if(qAllPeople) qAllPeople.addEventListener("click", function(){ view="summary"; render(); });
+    var qAddPerson = document.getElementById("qAddPerson");
+    if(qAddPerson) qAddPerson.addEventListener("click", openPersonSheet);
+    var qAddEntry = document.getElementById("qAddEntry");
+    if(qAddEntry) qAddEntry.addEventListener("click", function(){
+      if(state.people.length===0){ openPersonSheet(); return; }
+      currentPersonId = state.people[0].id; view="detail"; render();
+      setTimeout(openEntrySheet, 60);
+    });
+    var addCard = document.getElementById("addCard");
+    if(addCard) addCard.addEventListener("click", openPersonSheet);
+    mainEl.querySelectorAll(".pcard[data-id]").forEach(function(c){
+      c.addEventListener("click", function(){ currentPersonId = c.dataset.id; view="detail"; render(); });
+    });
+
+    var stackEl = document.getElementById("cardStack");
+    var dotsEl = document.getElementById("dots");
+    if(stackEl && dotsEl){
+      var n = state.people.length + 1;
+      for(var i=0;i<n;i++){ var d = document.createElement("span"); if(i===0) d.className="on"; dotsEl.appendChild(d); }
+      stackEl.addEventListener("scroll", function(){
+        var idx = Math.round(stackEl.scrollLeft / (stackEl.scrollWidth / n));
+        Array.from(dotsEl.children).forEach(function(el,i){ el.classList.toggle("on", i===idx); });
+      });
+    }
+  }
+
+  function renderSummary(){
+    var totals = overallTotals();
+    var codes = Object.keys(totals);
+    var html = '<div class="section-label" style="padding-top:calc(var(--safe-top) + 18px);">Overall</div>';
+    if(codes.length===0){
+      html += '<div class="empty"><div class="big">Nothing owed either way</div><small>Balances per currency will appear here<br>once you log entries.</small></div>';
+    } else {
+      html += '<div class="feed">';
+      codes.sort().forEach(function(c){
+        var v = totals[c]; var pos = v>0;
+        var label = v>0 ? "Net owed to you" : (v<0 ? "Net you owe" : "Settled");
+        html += '<div class="feed-item"><div class="feed-icon ' + (pos?"pos":"neg") + '">' + (pos?"↓":"↑") + '</div>' +
+          '<div class="feed-main"><div class="feed-name">' + c + '</div><div class="feed-sub">' + label + '</div></div>' +
+          '<div class="feed-amt ' + (pos?"pos":"neg") + '">' + fmt(Math.abs(v), c) + '</div></div>';
+      });
+      html += '</div>';
+    }
+    html += '<div class="section-label">All entries</div>';
+    var flat = allEntriesFlat();
+    if(flat.length===0){
+      html += '<div class="empty"><small>Nothing logged yet.</small></div>';
+    } else {
+      html += '<div class="feed">';
+      flat.forEach(function(item){
+        var pos = item.entry.amount > 0;
+        html += '<div class="feed-item">' +
+          '<div class="feed-icon ' + (pos?"pos":"neg") + '">' + (pos?"↓":"↑") + '</div>' +
+          '<div class="feed-main"><div class="feed-name">' + escapeHtml(item.person.name) + '</div>' +
+          '<div class="feed-sub">' + escapeHtml(item.entry.note || (item.entry.isSettlement?"Payment":(pos?"Lent":"Borrowed"))) + ' · ' + prettyDate(item.entry.date) + '</div></div>' +
+          '<div class="feed-amt ' + (pos?"pos":"neg") + '">' + (pos?"+":"−") + fmt(Math.abs(item.entry.amount), item.entry.currency) + '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+    mainEl.innerHTML = html;
+  }
+
+  // ---------- Reminders ----------
+  function reminderTargetLabel(r){
+    if(r.target === "me") return "Yourself";
+    var p = getPerson(r.target);
+    return p ? p.name : "Someone (deleted)";
+  }
+  function reminderDateTime(r){
+    return new Date(r.date + "T" + (r.time || "09:00") + ":00");
+  }
+  function isOverdue(r){
+    if(r.done) return false;
+    return reminderDateTime(r).getTime() <= Date.now();
+  }
+  function upcomingReminders(){
+    return state.people ? state.reminders.slice().sort(function(a,b){
+      return reminderDateTime(a) - reminderDateTime(b);
+    }) : [];
+  }
+  function refreshReminderBadges(){
+    var dueCount = state.reminders.filter(isOverdue).length;
+    var iconBadge = document.querySelector("#settingsBtn .dot-badge");
+    var tabBadge = document.getElementById("remTabBadge");
+    if(tabBadge) tabBadge.classList.toggle("show", dueCount > 0);
+  }
+
+  function renderReminders(){
+    var all = upcomingReminders();
+    var due = all.filter(isOverdue);
+    var upcoming = all.filter(function(r){ return !r.done && !isOverdue(r); });
+    var done = all.filter(function(r){ return r.done; });
+
+    var html = '<div class="section-label" style="padding-top:calc(var(--safe-top) + 18px);">Reminders' +
+      '<span class="mini-link" id="addReminderLink">+ New</span></div>';
+
+    function block(title, list, showOverdue){
+      if(!list.length) return "";
+      var out = '<div class="section-label" style="padding-top:8px; font-size:12.5px; color:var(--text-faint);">' + title + '</div><div class="feed">';
+      list.forEach(function(r){
+        var overdue = showOverdue && isOverdue(r);
+        out += '<div class="rem-item">' +
+          '<div class="rem-check' + (r.done?" done":"") + '" data-toggle="' + r.id + '">' + (r.done ? "✓" : "") + '</div>' +
+          '<div class="rem-main"><div class="rem-note' + (r.done?" done":"") + '">' + escapeHtml(r.note || "Reminder") + '</div>' +
+          '<div class="rem-sub' + (overdue?" overdue":"") + '">' + reminderTargetLabel(r) + ' · ' + prettyDate(r.date) + (r.time ? " · " + r.time : "") + (overdue ? " · overdue" : "") + '</div></div>' +
+          '<button class="rem-del" data-delrem="' + r.id + '">delete</button>' +
+        '</div>';
+      });
+      out += '</div>';
+      return out;
+    }
+
+    html += block("Overdue", due, true);
+    html += block("Upcoming", upcoming, false);
+    html += block("Done", done, false);
+
+    if(!all.length){
+      html += '<div class="empty"><div class="big">No reminders yet</div><small>Set a reminder for yourself or tied to a person —<br>e.g. to chase someone or pay them back.</small></div>';
+    }
+
+    mainEl.innerHTML = html;
+    document.getElementById("addReminderLink").addEventListener("click", function(){ openReminderSheet(); });
+    mainEl.querySelectorAll("[data-toggle]").forEach(function(el){
+      el.addEventListener("click", function(){
+        var r = state.reminders.find(function(x){return x.id===el.dataset.toggle;});
+        if(r){ r.done = !r.done; saveState(); renderReminders(); }
+      });
+    });
+    mainEl.querySelectorAll("[data-delrem]").forEach(function(el){
+      el.addEventListener("click", function(){
+        state.reminders = state.reminders.filter(function(x){return x.id!==el.dataset.delrem;});
+        saveState(); renderReminders();
+      });
+    });
+    refreshReminderBadges();
+  }
+
+  var reminderOverlay = document.getElementById("reminderOverlay");
+  var reminderTargetSel = document.getElementById("reminderTarget");
+  function refreshReminderTargetOptions(){
+    reminderTargetSel.innerHTML = "";
+    var meOpt = document.createElement("option"); meOpt.value = "me"; meOpt.textContent = "Yourself";
+    reminderTargetSel.appendChild(meOpt);
+    state.people.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(p){
+      var o = document.createElement("option"); o.value = p.id; o.textContent = p.name;
+      reminderTargetSel.appendChild(o);
+    });
+  }
+  function openReminderSheet(prefillPersonId){
+    refreshReminderTargetOptions();
+    reminderTargetSel.value = prefillPersonId || "me";
+    document.getElementById("reminderNote").value = "";
+    document.getElementById("reminderDate").value = todayISO();
+    document.getElementById("reminderTime").value = "09:00";
+    reminderOverlay.classList.add("show");
+    setTimeout(function(){document.getElementById("reminderNote").focus();}, 250);
+  }
+  document.getElementById("cancelReminderBtn").addEventListener("click", function(){ reminderOverlay.classList.remove("show"); });
+  reminderOverlay.addEventListener("click", function(e){ if(e.target===reminderOverlay) reminderOverlay.classList.remove("show"); });
+  document.getElementById("saveReminderBtn").addEventListener("click", function(){
+    var note = document.getElementById("reminderNote").value.trim();
+    var date = document.getElementById("reminderDate").value || todayISO();
+    var time = document.getElementById("reminderTime").value || "";
+    if(!note) return;
+    state.reminders.push({
+      id: uid(), target: reminderTargetSel.value, note: note, date: date, time: time,
+      done:false, createdAt: Date.now()
+    });
+    saveState();
+    reminderOverlay.classList.remove("show");
+    if(view==="reminders") renderReminders();
+    maybeRequestNotifyPermission();
+  });
+
+  function getPerson(id){ return state.people.find(function(p){return p.id===id;}); }
+
+  function renderDetail(){
+    var p = getPerson(currentPersonId);
+    if(!p){ view="people"; render(); return; }
+    var bal = personBalances(p); var codes = Object.keys(bal);
+    var primaryCode = codes[0] || state.defaultCurrency;
+    var primaryVal = bal[primaryCode] || 0;
+    var cls = primaryVal>0?"pos":(primaryVal<0?"neg":"zero");
+    var caption = primaryVal>0 ? "owes you" : (primaryVal<0 ? "you owe them" : "all settled");
+
+    var html = '<div class="detail-header"><button class="back" id="backBtn">‹</button>' +
+      '<div class="detail-title">' + escapeHtml(p.name) + '</div>' +
+      '<button class="del-person" id="delPersonBtn">Delete</button></div>';
+
+    html += '<div class="balance-block">' +
+      '<div class="avatar-lg" style="background:' + p.color + '">' + initials(p.name) + '</div>' +
+      '<div class="big-amt ' + cls + '">' + fmt(Math.abs(primaryVal), primaryCode) + '</div>' +
+      '<div class="caption">' + caption + '</div>';
+    if(codes.length>1){ html += '<div class="extra-currencies">' + codes.slice(1).map(function(c){return (bal[c]>0?"+":"−")+fmt(bal[c],c);}).join(" · ") + '</div>'; }
+    html += '</div>';
+
+    html += '<div class="actions-grid">' +
+      '<div class="action-circle" id="addEntryAction"><div class="ci">+</div><div class="cl">Add entry</div></div>' +
+      (codes.length ? '<div class="action-circle" id="settleAction"><div class="ci">✓</div><div class="cl">Settle</div></div>' : '') +
+      '<div class="action-circle" id="remindAction"><div class="ci">◔</div><div class="cl">Remind</div></div>' +
+    '</div>';
+
+    var personReminders = state.reminders.filter(function(r){ return r.target === p.id; }).sort(function(a,b){return reminderDateTime(a)-reminderDateTime(b);});
+    if(personReminders.length){
+      html += '<div class="section-label">Reminders</div><div class="feed">';
+      personReminders.forEach(function(r){
+        var overdue = isOverdue(r);
+        html += '<div class="rem-item">' +
+          '<div class="rem-check' + (r.done?" done":"") + '" data-toggle="' + r.id + '">' + (r.done?"✓":"") + '</div>' +
+          '<div class="rem-main"><div class="rem-note' + (r.done?" done":"") + '">' + escapeHtml(r.note) + '</div>' +
+          '<div class="rem-sub' + (overdue?" overdue":"") + '">' + prettyDate(r.date) + (r.time?" · "+r.time:"") + (overdue?" · overdue":"") + '</div></div>' +
+          '<button class="rem-del" data-delrem="' + r.id + '">delete</button>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '<div class="section-label">History</div>';
+    if(p.entries.length===0){
+      html += '<div class="empty"><small>No entries yet. Tap "Add entry" to log the first one.</small></div>';
+    } else {
+      html += '<div class="feed">';
+      p.entries.slice().sort(function(a,b){return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;}).forEach(function(e){
+        var isSettle = e.isSettlement;
+        var noteText = isSettle ? (e.note||"Payment") : (e.note || (e.amount>0?"Lent":"Borrowed"));
+        html += '<div class="entry-row" data-id="' + e.id + '">' +
+          '<div class="entry-left"><div class="entry-note' + (isSettle?" settlement":"") + '">' + escapeHtml(noteText) + '</div>' +
+          '<div class="entry-date">' + prettyDate(e.date) + '</div></div>' +
+          '<div class="entry-right"><div class="entry-amt ' + (e.amount>0?"pos":"neg") + '">' + (e.amount>0?"+":"−") + fmt(Math.abs(e.amount), e.currency) + '</div>' +
+          '<div class="entry-actions"><button data-del="' + e.id + '">delete</button></div></div>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    mainEl.innerHTML = html;
+    document.getElementById("backBtn").addEventListener("click", function(){ view="people"; render(); });
+    document.getElementById("delPersonBtn").addEventListener("click", function(){
+      if(confirm('Delete ' + p.name + ' and all their entries? This cannot be undone.')){
+        state.people = state.people.filter(function(x){return x.id!==p.id;});
+        state.reminders = state.reminders.filter(function(r){return r.target!==p.id;});
+        saveState(); view="people"; render();
+      }
+    });
+    document.getElementById("addEntryAction").addEventListener("click", openEntrySheet);
+    var settleAction = document.getElementById("settleAction");
+    if(settleAction) settleAction.addEventListener("click", openSettleSheet);
+    document.getElementById("remindAction").addEventListener("click", function(){ openReminderSheet(p.id); });
+    mainEl.querySelectorAll("[data-del]").forEach(function(btn){
+      btn.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        var eid = btn.dataset.del;
+        p.entries = p.entries.filter(function(x){return x.id!==eid;});
+        saveState(); renderDetail();
+      });
+    });
+    mainEl.querySelectorAll("[data-toggle]").forEach(function(el){
+      el.addEventListener("click", function(){
+        var r = state.reminders.find(function(x){return x.id===el.dataset.toggle;});
+        if(r){ r.done = !r.done; saveState(); renderDetail(); }
+      });
+    });
+    mainEl.querySelectorAll("[data-delrem]").forEach(function(el){
+      el.addEventListener("click", function(){
+        state.reminders = state.reminders.filter(function(x){return x.id!==el.dataset.delrem;});
+        saveState(); renderDetail();
+      });
+    });
+  }
+
+  document.querySelectorAll(".tab-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){ view = btn.dataset.view; currentPersonId=null; render(); });
+  });
+
+  var personOverlay = document.getElementById("personOverlay");
+  var avatarPick = document.getElementById("avatarPick");
+  var selectedColor = SWATCHES[0];
+  SWATCHES.forEach(function(c,i){
+    var sw = document.createElement("div");
+    sw.className = "swatch" + (i===0?" sel":""); sw.style.background=c;
+    sw.addEventListener("click", function(){
+      selectedColor = c; avatarPick.querySelectorAll(".swatch").forEach(function(s){s.classList.remove("sel");}); sw.classList.add("sel");
+    });
+    avatarPick.appendChild(sw);
+  });
+  function openPersonSheet(){
+    document.getElementById("personName").value = "";
+    selectedColor = SWATCHES[Math.floor(Math.random()*SWATCHES.length)];
+    avatarPick.querySelectorAll(".swatch").forEach(function(s,i){s.classList.toggle("sel", SWATCHES[i]===selectedColor);});
+    personOverlay.classList.add("show");
+    setTimeout(function(){document.getElementById("personName").focus();}, 250);
+  }
+  document.getElementById("cancelPersonBtn").addEventListener("click", function(){ personOverlay.classList.remove("show"); });
+  personOverlay.addEventListener("click", function(e){ if(e.target===personOverlay) personOverlay.classList.remove("show"); });
+  document.getElementById("savePersonBtn").addEventListener("click", function(){
+    var name = document.getElementById("personName").value.trim();
+    if(!name) return;
+    var p = { id: uid(), name:name, color:selectedColor, entries:[] };
+    state.people.push(p); saveState();
+    personOverlay.classList.remove("show");
+    currentPersonId = p.id; view="detail"; render();
+  });
+
+  var entryOverlay = document.getElementById("entryOverlay");
+  var entryDir = "owe_you";
+  var entryCurrencySel = document.getElementById("entryCurrency");
+  CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.code+"  "+c.symbol; entryCurrencySel.appendChild(o); });
+  function openEntrySheet(){
+    entryDir = "owe_you"; setDirButtons();
+    document.getElementById("entryAmount").value = "";
+    document.getElementById("entryNote").value = "";
+    document.getElementById("entryDate").value = todayISO();
+    entryCurrencySel.value = state.defaultCurrency;
+    entryOverlay.classList.add("show");
+  }
+  function setDirButtons(){
+    document.getElementById("dirOweYou").classList.toggle("active", entryDir==="owe_you");
+    document.getElementById("dirYouOwe").classList.toggle("active", entryDir==="you_owe");
+  }
+  document.getElementById("dirOweYou").addEventListener("click", function(){ entryDir="owe_you"; setDirButtons(); });
+  document.getElementById("dirYouOwe").addEventListener("click", function(){ entryDir="you_owe"; setDirButtons(); });
+  document.getElementById("cancelEntryBtn").addEventListener("click", function(){ entryOverlay.classList.remove("show"); });
+  entryOverlay.addEventListener("click", function(e){ if(e.target===entryOverlay) entryOverlay.classList.remove("show"); });
+  document.getElementById("saveEntryBtn").addEventListener("click", function(){
+    var amt = parseFloat(document.getElementById("entryAmount").value);
+    if(!amt || amt<=0) return;
+    var p = getPerson(currentPersonId); if(!p) return;
+    var signed = entryDir==="owe_you" ? amt : -amt;
+    p.entries.push({ id:uid(), amount:signed, currency:entryCurrencySel.value,
+      note: document.getElementById("entryNote").value.trim(),
+      date: document.getElementById("entryDate").value || todayISO(),
+      isSettlement:false, createdAt:Date.now() });
+    saveState();
+    entryOverlay.classList.remove("show");
+    renderDetail();
+  });
+
+  var settleOverlay = document.getElementById("settleOverlay");
+  var settleMode = "full";
+  var settleCurrencySel = document.getElementById("settleCurrency");
+  CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.code+"  "+c.symbol; settleCurrencySel.appendChild(o); });
+  function openSettleSheet(){
+    var p = getPerson(currentPersonId); if(!p) return;
+    var bal = personBalances(p); var codes = Object.keys(bal); var primary = codes[0];
+    settleMode = "full";
+    document.getElementById("settleFull").classList.add("active");
+    document.getElementById("settlePartial").classList.remove("active");
+    document.getElementById("settlePartialRow").style.display = "none";
+    var summaryEl = document.getElementById("settleSummary");
+    summaryEl.innerHTML = codes.length ? codes.map(function(c){
+      var v = bal[c];
+      return (v>0? (escapeHtml(p.name)+" owes you ") : ("You owe "+escapeHtml(p.name)+" ")) + "<b>" + fmt(Math.abs(v),c) + "</b>";
+    }).join("<br>") : "Nothing outstanding.";
+    settleCurrencySel.value = primary || state.defaultCurrency;
+    document.getElementById("settleAmount").value = primary ? Math.abs(bal[primary]).toFixed(2) : "";
+    settleOverlay.classList.add("show");
+  }
+  document.getElementById("settleFull").addEventListener("click", function(){
+    settleMode="full"; this.classList.add("active");
+    document.getElementById("settlePartial").classList.remove("active");
+    document.getElementById("settlePartialRow").style.display="none";
+  });
+  document.getElementById("settlePartial").addEventListener("click", function(){
+    settleMode="partial"; this.classList.add("active");
+    document.getElementById("settleFull").classList.remove("active");
+    document.getElementById("settlePartialRow").style.display="flex";
+  });
+  document.getElementById("cancelSettleBtn").addEventListener("click", function(){ settleOverlay.classList.remove("show"); });
+  settleOverlay.addEventListener("click", function(e){ if(e.target===settleOverlay) settleOverlay.classList.remove("show"); });
+  document.getElementById("confirmSettleBtn").addEventListener("click", function(){
+    var p = getPerson(currentPersonId); if(!p) return;
+    var bal = personBalances(p); var codes = Object.keys(bal);
+    if(!codes.length){ settleOverlay.classList.remove("show"); return; }
+    if(settleMode==="full"){
+      codes.forEach(function(c){
+        var v = bal[c];
+        p.entries.push({ id:uid(), amount:-v, currency:c, note:"Payment", date:todayISO(), isSettlement:true, createdAt:Date.now() });
+      });
+    } else {
+      var amt = parseFloat(document.getElementById("settleAmount").value);
+      var curr = settleCurrencySel.value;
+      if(!amt || amt<=0){ settleOverlay.classList.remove("show"); return; }
+      var current = bal[curr] || 0;
+      var delta = current>0 ? -Math.min(amt,current) : Math.min(amt,-current);
+      if(current===0) delta = -amt;
+      p.entries.push({ id:uid(), amount:delta, currency:curr, note:"Partial payment", date:todayISO(), isSettlement:true, createdAt:Date.now() });
+    }
+    saveState();
+    settleOverlay.classList.remove("show");
+    renderDetail();
+    flashStamp();
+  });
+  function flashStamp(){
+    var firstEntry = mainEl.querySelector(".entry-row");
+    if(!firstEntry) return;
+    var stamp = document.createElement("div");
+    stamp.className = "stamp"; stamp.textContent = "SETTLED";
+    firstEntry.style.position = "relative";
+    firstEntry.appendChild(stamp);
+    setTimeout(function(){ if(stamp.parentNode) stamp.parentNode.removeChild(stamp); }, 1600);
+  }
+
+  var infoOverlay = document.getElementById("infoOverlay");
+  var defaultCurrencySelect = document.getElementById("defaultCurrencySelect");
+  CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.code+"  "+c.symbol; defaultCurrencySelect.appendChild(o); });
+  defaultCurrencySelect.value = state.defaultCurrency;
+  defaultCurrencySelect.addEventListener("change", function(){ state.defaultCurrency = defaultCurrencySelect.value; saveState(); render(); });
+  document.getElementById("settingsBtn").addEventListener("click", function(){ infoOverlay.classList.add("show"); });
+  document.getElementById("closeInfoBtn").addEventListener("click", function(){ infoOverlay.classList.remove("show"); });
+  infoOverlay.addEventListener("click", function(e){ if(e.target===infoOverlay) infoOverlay.classList.remove("show"); });
+  document.getElementById("currencyBadge").addEventListener("click", function(){ infoOverlay.classList.add("show"); });
+
+  document.getElementById("themeDarkBtn").addEventListener("click", function(){ state.theme="dark"; saveState(); applyTheme(); });
+  document.getElementById("themeLightBtn").addEventListener("click", function(){ state.theme="light"; saveState(); applyTheme(); });
+
+  function maybeRequestNotifyPermission(){
+    if(!("Notification" in window)) return;
+    if(Notification.permission === "default"){
+      Notification.requestPermission();
+    }
+  }
+  document.getElementById("enableNotifBtn").addEventListener("click", function(){
+    if(!("Notification" in window)){ alert("Notifications aren't supported in this browser."); return; }
+    Notification.requestPermission().then(function(perm){
+      if(perm === "granted"){ new Notification("Owed", { body: "You'll be alerted here while the app is open." }); }
+    });
+  });
+
+  // Best-effort: while the app is open, poll every 30s and fire a notification
+  // for any reminder that just became due and hasn't been announced yet.
+  var announced = {};
+  function pollReminders(){
+    if(!("Notification" in window) || Notification.permission !== "granted") return;
+    state.reminders.forEach(function(r){
+      if(!r.done && isOverdue(r) && !announced[r.id]){
+        announced[r.id] = true;
+        try{ new Notification("Reminder: " + r.note, { body: reminderTargetLabel(r) }); }catch(e){}
+      }
+    });
+  }
+  setInterval(pollReminders, 30000);
+
+  function refreshCurrencyBadge(){ var el = document.getElementById("currencyBadge"); if(el) el.textContent = state.defaultCurrency + " ▾"; }
+  refreshCurrencyBadge();
+  applyTheme();
+  refreshReminderBadges();
+  pollReminders();
+
+  render();
+})();
+</script>
+</body>
+</html>
